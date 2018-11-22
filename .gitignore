@@ -1,1 +1,8 @@
-crimes-in-chicago.zip
+.DS_Store
+.ipynb_checkpoints
+
+*.zip
+*.csv
+
+Boundaries_Wards_2015/
+maps/
