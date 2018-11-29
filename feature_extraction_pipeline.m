@@ -1,5 +1,5 @@
-ship_img = imread('./ship_detection/test_images/ship_example.png');
-not_ship_img = imread('./ship_detection/test_images/not_ship_example.png');
+ship_img = imread('./Ship-Detection/test_images/ship_example.png');
+not_ship_img = imread('./Ship-Detection/test_images/not_ship_example.png');
 
 % Feature extraction parameters
 filter_size = [5 5];
@@ -13,6 +13,13 @@ visualize = true;
 % Smooth images using a median filter
 ship_img = smoothImage(ship_img, filter_size);
 not_ship_img = smoothImage(not_ship_img, filter_size);
+
+if visualize
+    figure;
+    imshow(ship_img, 'InitialMagnification', 'fit');
+    figure;
+    imshow(not_ship_img, 'InitialMagnification', 'fit');
+end
 
 % Extract features
 ship_features = featureExtraction(ship_img, color_space, color_bins, ...
