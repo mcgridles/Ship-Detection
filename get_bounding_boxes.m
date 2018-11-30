@@ -1,39 +1,71 @@
+% Relative path to extracted data-set
+root_dir = "../all/";
 
-% Load file
-file = fopen('train_ship_segmentations_v2.csv');
+% Number of images we want to look at
+image_num = 500;
+
+% Load input file
+input_file = fopen(char(root_dir + 'train_ship_segmentations_v2.csv'));
+
+% Create output file
+output_file = fopen('detections.csv','w');
 
 % Read first header line (ignore it really)
-header = fgetl(file);
+header = fgetl(input_file);
 
 % Read next x lines of data
 % Don't try them all at once there's 231,000
-for x = 1:10
+current_img = "";
+bounding_boxes = [];
+image_counter = 0;
+ship_counter = 0;
+no_ship_counter = 0;
+while image_counter <= image_num
     
     % Manually split lines with ',' delimeter
-    line = strsplit(fgetl(file),',');
+    line = strsplit(fgetl(input_file),',');
     
     % Check if there is a ship in this image
     if line(1,2) ~= ""
+        ship_counter = ship_counter+1;
         
         % Get RLE info
         rle = strsplit(char(line(1,2))," ");
         rle_size = size(rle);
         
         % Load image
-        image_name = char("train_v2/" + char(line(1,1)));
-        image_size = size(image);
-        image = imread(image_name);
-        figure(1);
-        imshow(image);
+        image_name = char(root_dir + "train_v2/" + char(line(1,1)));
+        if ~strcmp(image_name,current_img)
+            image_counter = image_counter+1;
+            
+            % Output previous bounding boxes
+            if ~strcmp(current_img,"");
+                
+                fprintf(output_file,'%s',current_img);
+                for point = bounding_boxes.'
+                    fprintf(output_file,',%i,%i,%i,%i',point(1),point(2),point(3),point(4));
+                end
+                fprintf(output_file,',1\n');
+                
+                bounding_boxes = [];
+            end
+            
+            % Get new image
+            image_size = size(image);
+            image = imread(image_name);
+            %figure(1);
+            %imshow(image);
+            current_img = image_name;
+        end
         
         % Create blank mask
-        mask = uint8(zeros(image_size));
+        %mask = uint8(zeros(image_size));
         
         % Bounding box initial parameters
         x_min = image_size(1);
-        x_max = 0;
+        x_max = 1;
         y_min = image_size(2);
-        y_max = 0;
+        y_max = 1;
         
         % Calculate mask
         for index = 1:2:rle_size(2)
@@ -59,20 +91,36 @@ for x = 1:10
             end
             
             % Construct bounding box
-            mask(x_min:x_max,y_min:y_max,:) = 1;
+            x_min = max(1,x_min);
+            y_min = max(1,y_min);
+            %mask(x_min:x_max,y_min:y_max,:) = 1;
         end
         
         % Detection
-        detection_img = image.*mask;
-        figure(2);
-        imshow(detection_img);
+        %detection_img = image.*mask;
+        %figure(2);
+        %imshow(detection_img);
         
-        output = sprintf("Bounding box location: [%i,%i],[%i,%i]",x_min,y_min,x_max,y_max);
-        disp(output);
-        disp("Next");
+        bounding_boxes = [bounding_boxes; [x_min,y_min,x_max,y_max]];
         
     % No ship
     else
-        disp("No ships in this image");
+        no_ship_counter = no_ship_counter+1;
+        
+        % Generate random "false" sample, samples have a median size of
+        % 650 pixels aka 25x26
+        sample_x = randi([1,image_size(1)-25],1,1);
+        sample_y = randi([1,image_size(2)-26],1,1);
+        fprintf(output_file,'%s,%i,%i,%i,%i,0\n',...
+            char(root_dir + "train_v2/" + char(line(1,1))),...
+            sample_x,sample_y,...
+            sample_x+25,sample_y+25);
     end
 end
+
+fclose(input_file);
+fclose(output_file);
+
+disp("Positive/Negative sample ratio:");
+output = sprintf("%i/%i\n",ship_counter,no_ship_counter);
+disp(output);
