@@ -4,7 +4,7 @@ function [data] = createDataMatrix(params, root_dir, image_dir)
     test_features = featureExtraction(test_img, params);
     num_features = length(test_features);
 
-    input_file = fopen(fullfile(root_dir, 'test.csv'));
+    input_file = fopen(fullfile(root_dir, 'detections.csv'));
 
     data.features = zeros(num_features, 0);
     data.class = zeros(1, 0);
