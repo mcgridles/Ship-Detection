@@ -5,13 +5,15 @@ function [features] = featureExtraction(img, params)
         img = colorConvert(img, params.color_space);
     end
     
-    color_features = colorHistogram(img, params.color_bins, params.viz);
+    color_features = colorHistogram(img, params.color_bins, ...
+        params.visualize);
     
     gray_img = rgb2gray(img);
     gradient_features = gradientHistogram(gray_img, params.grad_size, ...
-        params.grad_bins, params.viz);
+        params.grad_bins, params.visualize);
     
-    spatial_features = spatialBinning(img, params.spatial_size, params.viz);
+    spatial_features = spatialBinning(img, params.spatial_size, ...
+        params.visualize);
     
     features = cat(1, color_features, gradient_features, spatial_features);
 end
@@ -28,6 +30,11 @@ function [features] = colorHistogram(img, nbins, viz)
     
     features = cat(2, c1_hist, c2_hist, c3_hist);
     features = features';
+    
+    % Normalize features [0,1]
+    max_val = max(features);
+    min_val = min(features);
+    features = (features - min_val) / max_val;
     
     if viz
         figure;
@@ -52,6 +59,11 @@ function [features] = gradientHistogram(img, cell_size, nbins, viz)
         'NumBins', nbins);
     features = features';
     
+    % Normalize features [0,1]
+    max_val = max(features);
+    min_val = min(features);
+    features = (features - min_val) / max_val;
+    
     if viz
         figure;
         imshow(img, 'InitialMagnification', 'fit');
@@ -67,6 +79,11 @@ end
 function [features] = spatialBinning(img, sz, viz)
     reduced = imresize(img, sz);
     features = reduced(:);
+    
+    % Normalize features [0,1]
+    max_val = max(features);
+    min_val = min(features);
+    features = (features - min_val) / max_val;
     
     if viz
         figure;
