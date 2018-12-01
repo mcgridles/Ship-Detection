@@ -2,7 +2,7 @@
 root_dir = "../all/";
 
 % Number of images we want to look at
-image_num = 500;
+image_num = 1000;
 
 % Load input file
 input_file = fopen(char(root_dir + 'train_ship_segmentations_v2.csv'));
@@ -26,6 +26,7 @@ while image_counter <= image_num
     line = strsplit(fgetl(input_file),',');
     
     % Check if there is a ship in this image
+    image_name = char(root_dir + "train_v2/" + char(line(1,1)));
     if line(1,2) ~= ""
         ship_counter = ship_counter+1;
         
@@ -34,7 +35,6 @@ while image_counter <= image_num
         rle_size = size(rle);
         
         % Load image
-        image_name = char(root_dir + "train_v2/" + char(line(1,1)));
         if ~strcmp(image_name,current_img)
             image_counter = image_counter+1;
             
@@ -51,8 +51,8 @@ while image_counter <= image_num
             end
             
             % Get new image
-            image_size = size(image);
             image = imread(image_name);
+            image_size = size(image);
             %figure(1);
             %imshow(image);
             current_img = image_name;
@@ -106,6 +106,10 @@ while image_counter <= image_num
     % No ship
     else
         no_ship_counter = no_ship_counter+1;
+        
+        % Get new image
+        image = imread(image_name);
+        image_size = size(image);
         
         % Generate random "false" sample, samples have a median size of
         % 650 pixels aka 25x26
