@@ -1,18 +1,17 @@
 % Extracts features from an RGB image
-function [features] = featureExtraction(img, color_space, color_bins, ...
-    grad_size, grad_bins, spatial_size, viz)
+function [features] = featureExtraction(img, params)
 
-    if ~strcmp(color_space,'rgb')
-        img = colorConvert(img, color_space);
+    if ~strcmp(params.color_space,'rgb')
+        img = colorConvert(img, params.color_space);
     end
     
-    color_features = colorHistogram(img, color_bins, viz);
+    color_features = colorHistogram(img, params.color_bins, params.viz);
     
     gray_img = rgb2gray(img);
-    gradient_features = gradientHistogram(gray_img, grad_size, ...
-        grad_bins, viz);
+    gradient_features = gradientHistogram(gray_img, params.grad_size, ...
+        params.grad_bins, params.viz);
     
-    spatial_features = spatialBinning(img, spatial_size, viz);
+    spatial_features = spatialBinning(img, params.spatial_size, params.viz);
     
     features = cat(1, color_features, gradient_features, spatial_features);
 end
