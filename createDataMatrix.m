@@ -9,7 +9,7 @@ function [data] = createDataMatrix(params, root_dir, image_dir)
     data.class = zeros(0, 1);
 
     % Read CSV file containing detections
-    input_file = fopen(fullfile(root_dir, 'detections_v2.csv'));
+    input_file = fopen(fullfile(root_dir, 'detections.csv'));
     
     line = fgetl(input_file);
     while ischar(line)
