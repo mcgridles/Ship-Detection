@@ -8,7 +8,7 @@ params.spatial_size = [32 32];
 params.visualize = false;
 
 % Other parameters
-window_size = [5 5];
+window_size = [10 10];
 training_image_count = 2000;
 test_image_display_count = 10;
 pixel_step_size = 10;
@@ -99,12 +99,12 @@ for index = 1:test_image_display_count
             figure(1);
             imshow(test_image);
             hold on;
-            for bbox_index = 1:4:size(bounding_boxes,1)
+            for bbox_index = 1:4:size(bounding_boxes,2)
                 rectangle('Position',bounding_boxes(bbox_index:bbox_index+3),...
                     'EdgeColor','b');
                 hold on;
             end
-            for gbox_index = 1:4:size(groundtruth,1)
+            for gbox_index = 1:4:size(groundtruth,2)
                 rectangle('Position',groundtruth(gbox_index:gbox_index+3),...
                     'EdgeColor','g');
                 hold on;
