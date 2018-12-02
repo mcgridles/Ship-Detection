@@ -4,7 +4,7 @@ function [] = get_bounding_boxes(root_dir,image_num)
     input_file = fopen(fullfile(root_dir,'train_ship_segmentations_v2.csv'));
 
     % Create output file
-    output_file = fopen('detections.csv','w');
+    output_file = fopen('Ship-Detection\detections.csv','w');
 
     % Read first header line (ignore it really)
     header = fgetl(input_file);
@@ -22,7 +22,7 @@ function [] = get_bounding_boxes(root_dir,image_num)
         line = strsplit(fgetl(input_file),',');
 
         % Check if there is a ship in this image
-        image_name = char(root_dir + "train_v2/" + char(line(1,1)));
+        image_name = fullfile(root_dir, "train_v2", char(line(1,1)));
         if line(1,2) ~= ""
             ship_counter = ship_counter+1;
 
@@ -112,7 +112,7 @@ function [] = get_bounding_boxes(root_dir,image_num)
             sample_x = randi([1,image_size(1)-25],1,1);
             sample_y = randi([1,image_size(2)-26],1,1);
             fprintf(output_file,'%s,%i,%i,%i,%i,0\n',...
-                char(root_dir + "train_v2/" + char(line(1,1))),...
+                char(root_dir + "\train_v2/" + char(line(1,1))),...
                 sample_x,sample_y,...
                 sample_x+25,sample_y+25);
         end

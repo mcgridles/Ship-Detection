@@ -1,6 +1,7 @@
 % Extracts features from an RGB image
 function [features] = featureExtraction(img, params)
-
+    img = imresize(img, [100 100]);
+    
     if ~strcmp(params.color_space,'rgb')
         img = colorConvert(img, params.color_space);
     end
@@ -75,12 +76,12 @@ end
 % Resizes and vectorizes an image
 function [features] = spatialBinning(img, sz, viz)
     reduced = imresize(img, sz);
-    features = reduced(:)';
+    features = double(reduced(:)');
     
     % Normalize features [0,1]
     max_val = max(features);
     min_val = min(features);
-    features = (features - min_val) / max_val;
+    features = double((features - min_val) / max_val);
     
     if viz
         figure;
@@ -94,8 +95,8 @@ end
 function [converted_img] = colorConvert(img, color_space)
     if strcmp(color_space,'hsv')
         converted_img = rgb2hsv(img);
-    elseif strcmp(color_space, 'ycrcb')
-        converted_img = rgb2ycrcb(img);
+    elseif strcmp(color_space, 'ycbcr')
+        converted_img = rgb2ycbcr(img);
     elseif strcmp(color_space, 'lab')
         converted_img = rbg2lab(img);
     else

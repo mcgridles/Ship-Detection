@@ -1,6 +1,6 @@
 function [data] = createDataMatrix(params, root_dir, image_dir)
     % Extract features on test image to determine number of features
-    test_img = imread(fullfile(root_dir,'test_images/ship_example.png'));
+    test_img = imread(fullfile(root_dir,'test_images','ship_example.png'));
     test_img = smoothImage(test_img, params.filter_size);
     test_features = featureExtraction(test_img, params);
     num_features = length(test_features);
@@ -36,6 +36,10 @@ function [data] = createDataMatrix(params, root_dir, image_dir)
         if class ~= 0 && class ~= 1
             error('Invalid class found: %d', class);
         end
+        
+        if class == 0
+            class = 2;
+        end
 
         for b=1:4:size(boxes,2)
             % Coordinates of upper left and lower right corners of bounding
@@ -52,7 +56,7 @@ function [data] = createDataMatrix(params, root_dir, image_dir)
 
             data.features = cat(1, data.features, features);
             data.class = cat(1, data.class, class);
-            data.image_name = cat(1,data.image_name, image_name);
+%             data.image_name = cat(1,data.image_name, image_name);
         end
         
         % Read next line
