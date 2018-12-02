@@ -22,7 +22,7 @@ function [] = get_bounding_boxes(root_dir,image_num)
         line = strsplit(fgetl(input_file),',');
 
         % Check if there is a ship in this image
-        image_name = char(root_dir + "train_v2/" + char(line(1,1)));
+        image_name = fullfile(root_dir,'train_v2',char(line(1,1)));
         if line(1,2) ~= ""
             ship_counter = ship_counter+1;
 

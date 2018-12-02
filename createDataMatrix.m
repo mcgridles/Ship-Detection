@@ -1,3 +1,4 @@
+
 function [data] = createDataMatrix(params, root_dir, image_dir)
     % Extract features on test image to determine number of features
     test_img = imread(fullfile(root_dir,'test_images/ship_example.png'));
@@ -20,7 +21,7 @@ function [data] = createDataMatrix(params, root_dir, image_dir)
         image_path = line{1};
         image_name = strsplit(image_path,{'/','\'});
         image_name = image_name{1,end};
-        image = imread(fullfile(image_dir,image_name));
+        image = imread(fullfile(root_dir,image_dir,image_name));
         
         % Get bounding box coordinates and class number
         if isempty(line{end})
