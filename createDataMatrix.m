@@ -7,6 +7,7 @@ function [data] = createDataMatrix(params, root_dir, image_dir)
 
     data.features = zeros(0, num_features);
     data.class = zeros(0, 1);
+    data.image_name = [];
 
     % Read CSV file containing detections
     input_file = fopen(fullfile(root_dir, 'detections.csv'));
@@ -51,6 +52,7 @@ function [data] = createDataMatrix(params, root_dir, image_dir)
 
             data.features = cat(1, data.features, features);
             data.class = cat(1, data.class, class);
+            data.image_name = cat(1,data.image_name, image_name);
         end
         
         % Read next line
