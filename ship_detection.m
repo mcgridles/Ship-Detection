@@ -82,14 +82,17 @@ for index = 1:test_image_display_count
             line = fgetl(file);
             groundtruth = [];
             while ischar(line)
-                line = strsplit(fgetl(file),',');
+                line = strsplit(line,',');
                 if contains(char(line(1,1)),test_image_name)
-                    class = line(1,end);
+                    class = str2double(line(1,end));
                     if class == 1
                         groundtruth = line(1,2:end-1);
                     end
                 end
                 line = fgetl(file);
+            end
+            if ~isempty(groundtruth)
+                groundtruth = str2double(groundtruth);
             end
             
             % Compare with groundtruth
@@ -102,7 +105,7 @@ for index = 1:test_image_display_count
                 hold on;
             end
             for gbox_index = 1:4:size(groundtruth,1)
-                rectangle('Position',[bounding_boxes(bbox_index:bbox_index+3)],...
+                rectangle('Position',groundtruth(gbox_index:gbox_index+3),...
                     'EdgeColor','g');
                 hold on;
             end

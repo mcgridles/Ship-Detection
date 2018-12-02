@@ -2,7 +2,8 @@ function [heatmap] = classifier(root_dir, model, image_folder, image_name, windo
     
     % Load image
     image = imread(fullfile(root_dir,image_folder,image_name));
-    heatmap = zeros(size(image));
+    image_size = size(image);
+    heatmap = zeros(image_size(1),image_size(2));
     
     % Traverse image and classify pixels
     for x = window_size(1)+1:pixel_step_size:size(image,1)-window_size(1)
