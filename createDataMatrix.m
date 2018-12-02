@@ -1,6 +1,6 @@
 function [data] = createDataMatrix(params, root_dir, image_dir)
     % Extract features on test image to determine number of features
-    test_img = imread('./Ship-Detection/test_images/ship_example.png');
+    test_img = imread(fullfile(root_dir,'test_images/ship_example.png'));
     test_img = smoothImage(test_img, params.filter_size);
     test_features = featureExtraction(test_img, params);
     num_features = length(test_features);
