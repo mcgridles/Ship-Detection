@@ -56,4 +56,7 @@ function [data] = createDataMatrix(params, root_dir, image_dir)
         % Read next line
         line = fgetl(input_file);
     end
+    
+    data.features = double(data.features);
+    data.class = double(data.class);
 end

@@ -9,7 +9,7 @@ params.visualize = false;
 training_image_count = 2000;
 
 % Directory variables
-root_dir = './';
+root_dir = './Ship-Detection';
 image_dir = 'train_v2';
 
 %% Get bounding boxes
@@ -24,18 +24,27 @@ else
 end
 
 %% Extract data
-if ~exist('data','var')
+if ~exist(fullfile(root_dir, 'data.mat'),'file')
     disp("No existing feature set found, creating new one");
     tic
     data = createDataMatrix(params, root_dir, image_dir);
-    runtime = toc;
-    fprintf("Created data matrix in: %.8f seconds\n",runtime);
+    feature_extract_runtime = toc;
+    fprintf("Created data matrix in: %.8f seconds\n",feature_extract_runtime);
 else
     disp("Existing feature set found, skipping feature generation");
+    data_struct = load(fullfile(root_dir, 'data.mat'));
+    data = data_struct.data;
 end
 
+tic
+[pcs,scrs,~,~,pexp] = pca(double(data.features));
+pareto(pexp);
+title('Result of PCA, first 10 components');
+pca_runtime = toc;
+fprintf("Performed PCA in: %.8f seconds\n",pca_runtime);
+
 %% Create classifier
-if ~exist('mdl','var')
+if ~exist(fullfile(root_dir, 'ship_detection_model.mat'), 'file')
     disp("No existing classifier found, creating new one");
     tic
     disp('Training model...');
@@ -48,8 +57,9 @@ if ~exist('mdl','var')
     mdl_loss = loss(compact_mdl, X_test, y_test); % Calculate loss
 
     saveCompactModel(compact_mdl, fullfile(root_dir,'ship_detection_model_v2'));
-    runtime = toc;
-    fprintf("Generated model in: %.8f seconds\n",runtime);
+    training_runtime = toc;
+    fprintf("Generated model in: %.8f seconds\n",training_runtime);
 else
     disp("Found existing classifier, skipping classifier creation");
+    mdl = loadCompactModel(fullfile(root_dir, 'ship_detection_model.mat'));
 end
