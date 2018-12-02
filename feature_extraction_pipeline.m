@@ -11,10 +11,10 @@ params.spatial_sz = [32 32];
 params.visualize = false;
 
 % Smooth images using a median filter
-ship_img = smoothImage(ship_img, filter_size);
-not_ship_img = smoothImage(not_ship_img, filter_size);
+ship_img = smoothImage(ship_img, params.filter_size);
+not_ship_img = smoothImage(not_ship_img, params.filter_size);
 
-if visualize
+if params.visualize
     figure;
     imshow(ship_img, 'InitialMagnification', 'fit');
     figure;
@@ -22,15 +22,5 @@ if visualize
 end
 
 % Extract features
-ship_features = featureExtraction(ship_img, color_space, color_bins, ...
-    grad_size, grad_bins, spatial_sz, visualize);
-not_ship_features = featureExtraction(not_ship_img, color_space, ...
-    color_bins, grad_size, grad_bins, spatial_sz, visualize);
-
-% Smooths each channel of an image using a median filter
-function [smoothed] = smoothImage(img, filter_size)
-    smoothed = img;
-    for channel=1:size(img,3)
-        smoothed(:,:,channel) = medfilt2(img(:,:,channel),filter_size);
-    end
-end
+ship_features = featureExtraction(ship_img, params);
+not_ship_features = featureExtraction(not_ship_img, params);

@@ -15,7 +15,7 @@ function [features] = featureExtraction(img, params)
     spatial_features = spatialBinning(img, params.spatial_size, ...
         params.visualize);
     
-    features = cat(1, color_features, gradient_features, spatial_features);
+    features = cat(2, color_features, gradient_features, spatial_features);
 end
 
 % Turns color information into a feature vector using histograms
@@ -29,7 +29,6 @@ function [features] = colorHistogram(img, nbins, viz)
     [c3_hist,~] = histcounts(channel_3(:),nbins);
     
     features = cat(2, c1_hist, c2_hist, c3_hist);
-    features = features';
     
     % Normalize features [0,1]
     max_val = max(features);
@@ -52,12 +51,10 @@ end
 
 % Extracts histogram of oriented gradient features from an image
 function [features] = gradientHistogram(img, cell_size, nbins, viz)
-
     img = imresize(img, [64 64]);
     
     [features, hog_viz] = extractHOGFeatures(img, 'CellSize', cell_size, ...
         'NumBins', nbins);
-    features = features';
     
     % Normalize features [0,1]
     max_val = max(features);
@@ -78,7 +75,7 @@ end
 % Resizes and vectorizes an image
 function [features] = spatialBinning(img, sz, viz)
     reduced = imresize(img, sz);
-    features = reduced(:);
+    features = reduced(:)';
     
     % Normalize features [0,1]
     max_val = max(features);

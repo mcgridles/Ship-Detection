@@ -9,6 +9,17 @@ params.visualize = false;
 
 % Directory variables
 root_dir = 'Ship-Detection';
-image_dir = 'test_images';
+image_dir = 'D:\Ship-Detection\train_v2';
 
+tic
+% Create feature matrix
+disp('Extracting features...');
 data = createDataMatrix(params, root_dir, image_dir);
+toc
+
+tic
+% Train and save classifier
+disp('Training model...');
+mdl = fitcsvm(double(data.features), double(data.class));
+saveCompactModel(mdl, 'Ship-Detection/ship_detection_model_v2');
+toc
