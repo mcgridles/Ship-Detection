@@ -55,6 +55,7 @@ end
 if params.visualize
     featurePCA(data);
 end
+return
 
 %% Create classifier
 if ~exist(fullfile(params.root_dir, 'ship_detection_model.mat'), 'file')
