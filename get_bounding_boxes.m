@@ -1,10 +1,10 @@
 function [] = get_bounding_boxes(root_dir,image_num)
 
     % Load input file
-    input_file = fopen(fullfile(root_dir,'train_ship_segmentations_v2.csv'));
+    input_file = fopen(fullfile(root_dir,'modified_ship_segmentations.csv'));
 
     % Create output file
-    output_file = fopen('detections.csv','w');
+    output_file = fopen('test_detections.csv','w');
 
     % Read first header line (ignore it really)
     header = fgetl(input_file);
@@ -12,6 +12,7 @@ function [] = get_bounding_boxes(root_dir,image_num)
     % Read next x lines of data
     % Don't try them all at once there's 231,000
     current_img = "";
+    last_image = "";
     bounding_boxes = [];
     image_counter = 0;
     ship_counter = 0;
@@ -23,6 +24,19 @@ function [] = get_bounding_boxes(root_dir,image_num)
 
         % Check if there is a ship in this image
         image_name = fullfile(root_dir,'train_v2',char(line(1,1)));
+        if ~strcmp(last_image,"") && ~strcmp(current_img,last_image)
+            if ~isempty(bounding_boxes)
+                fprintf(output_file,'%s',current_img);
+                for point = bounding_boxes.'
+                    fprintf(output_file,',%i,%i,%i,%i',point(1),point(2),point(3),point(4));
+                end
+                fprintf(output_file,',1\n');
+                bounding_boxes = [];
+            end
+        end
+        last_image = current_img;
+        
+        % If there's a ship
         if line(1,2) ~= ""
             ship_counter = ship_counter+1;
 
@@ -34,28 +48,16 @@ function [] = get_bounding_boxes(root_dir,image_num)
             if ~strcmp(image_name,current_img)
                 image_counter = image_counter+1;
 
-                % Output previous bounding boxes
-                if ~strcmp(current_img,"")
-
-                    fprintf(output_file,'%s',current_img);
-                    for point = bounding_boxes.'
-                        fprintf(output_file,',%i,%i,%i,%i',point(1),point(2),point(3),point(4));
-                    end
-                    fprintf(output_file,',1\n');
-
-                    bounding_boxes = [];
-                end
-
                 % Get new image
                 image = imread(image_name);
                 image_size = size(image);
-                %figure(1);
-                %imshow(image);
+                figure(1);
+                imshow(image);
                 current_img = image_name;
             end
 
             % Create blank mask
-            %mask = uint8(zeros(image_size));
+            mask = uint8(zeros(image_size));
 
             % Bounding box initial parameters
             x_min = image_size(1);
@@ -89,15 +91,24 @@ function [] = get_bounding_boxes(root_dir,image_num)
                 % Construct bounding box
                 x_min = max(1,x_min);
                 y_min = max(1,y_min);
-                %mask(x_min:x_max,y_min:y_max,:) = 1;
+                mask(x_min:x_max,y_min:y_max,:) = 1;
             end
 
             % Detection
-            %detection_img = image.*mask;
-            %figure(2);
-            %imshow(detection_img);
+            detection_img = image.*mask;
+            fig = figure(2);
+            imshow(detection_img);
 
-            bounding_boxes = [bounding_boxes; [x_min,y_min,x_max,y_max]];
+            disp(image_name);
+            
+            
+            % Decide to keep or not
+            waitforbuttonpress;
+            k = fig.CurrentCharacter;
+            if k == 'k'
+                bounding_boxes = [bounding_boxes; [x_min,y_min,x_max,y_max]];
+            end       
+            disp(k);
 
         % No ship
         else
