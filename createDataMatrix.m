@@ -11,7 +11,7 @@ function [data] = createDataMatrix(params)
     data.image_name = [];
 
     % Read CSV file containing detections
-    input_file = fopen(fullfile(params.root_dir, 'train_detections.csv'));
+    input_file = fopen(fullfile(params.root_dir, 'detections.csv'));
     
     line = fgetl(input_file);
     while ischar(line)

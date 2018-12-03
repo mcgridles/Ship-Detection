@@ -2,7 +2,7 @@
 
 %% Define Parameters
 % Feature extraction parameters
-params.filter_size = [11 11];
+params.filter_size = [5 5];
 params.color_space = 'ycbcr';
 params.color_bins = 32;
 params.grad_size = [16 16];
@@ -11,14 +11,16 @@ params.spatial_size = [32 32];
 params.visualize = false;
 
 % Other parameters
-params.train_image_count = 1000;
-params.test_image_count = 1000;
+params.train_image_count = 220;
+params.test_image_count = 100;
 params.test_image_display_count = 10;
 params.window_size = [30 30];
 params.num_steps = 100;
-params.confidence_thresh = 1;
-params.heatmap_thresh = 0.01;
-params.min_box_size = 30;
+params.num_pca_features = 256;
+params.pca_coeff = [];
+params.confidence_thresh = 1.05;
+params.heatmap_thresh = 0.3;
+params.min_box_size = 20;
 params.k_fold = 10;
 params.poly_order = 5;
 
@@ -27,7 +29,7 @@ params.root_dir = './Ship-Detection';
 params.image_dir = 'train_v2';
 
 %% Get sample bounding boxes from Run Length Encoded CSV file
-if ~exist(fullfile(params.root_dir, 'train_detections.csv'),'file')
+if ~exist(fullfile(params.root_dir, 'detections.csv'),'file')
     disp("No file 'train_detections.csv' found, extracting bounding boxes...");
     tic
     get_bounding_boxes(params);
@@ -52,10 +54,8 @@ else
 end
 
 % Perform PCA on data
-if params.visualize
-    featurePCA(data);
-end
-return
+% PCA reduction was tested and did not produce better results
+% [params.pca_coeff, data.features] = featurePCA(data, params);
 
 %% Create classifier
 if ~exist(fullfile(params.root_dir, 'ship_detection_model.mat'), 'file')
@@ -108,9 +108,7 @@ figure;
 heatmap(double(heat),'MissingDataColor',[1 1 1],'GridVisible','off');
 figure;
 imshow(labeled_img);
-return
 
 %% Classify all test data
-% TODO: Test this
-err = calculateError(params);
+err = calculateError(mdl, params);
 fprintf('Total error: %.3f\n', err);

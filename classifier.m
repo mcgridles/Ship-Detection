@@ -24,6 +24,11 @@ function [arr] = classifier(mdl, imgName, params)
                 img = example_image(y:y_win,x:x_win,:);
                 feature = featureExtraction(img, params);
                 
+                % If PCA reduction is being used
+                if ~isempty(params.pca_coeff)
+                    feature = feature * params.pca_coeff;
+                end
+                
                 % predict if there is a boat there or not (1 means there 
                 % is a boat 0 means there is not
                 [label, score] = predict(mdl, double(feature));
