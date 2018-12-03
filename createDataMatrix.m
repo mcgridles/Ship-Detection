@@ -1,6 +1,7 @@
-function [data] = createDataMatrix(params, root_dir, image_dir)
+function [data] = createDataMatrix(params)
     % Extract features on test image to determine number of features
-    test_img = imread(fullfile(root_dir,'test_images','ship_example.png'));
+    test_img = imread(fullfile(params.root_dir,'test_images',...
+        'ship_example.png'));
     test_img = smoothImage(test_img, params.filter_size);
     test_features = featureExtraction(test_img, params);
     num_features = length(test_features);
@@ -10,7 +11,7 @@ function [data] = createDataMatrix(params, root_dir, image_dir)
     data.image_name = [];
 
     % Read CSV file containing detections
-    input_file = fopen(fullfile(root_dir, 'detections.csv'));
+    input_file = fopen(fullfile(params.root_dir, 'train_detections.csv'));
     
     line = fgetl(input_file);
     while ischar(line)
@@ -20,7 +21,8 @@ function [data] = createDataMatrix(params, root_dir, image_dir)
         image_path = line{1};
         image_name = strsplit(image_path,{'/','\'});
         image_name = image_name{1,end};
-        image = imread(fullfile(image_dir,image_name));
+        image = imread(fullfile(params.root_dir,params.image_dir,...
+            image_name));
         
         % Get bounding box coordinates and class number
         if isempty(line{end})
@@ -35,10 +37,6 @@ function [data] = createDataMatrix(params, root_dir, image_dir)
         % Make sure class was read correctly
         if class ~= 0 && class ~= 1
             error('Invalid class found: %d', class);
-        end
-        
-        if class == 0
-            class = 2;
         end
 
         for b=1:4:size(boxes,2)
@@ -56,7 +54,7 @@ function [data] = createDataMatrix(params, root_dir, image_dir)
 
             data.features = cat(1, data.features, features);
             data.class = cat(1, data.class, class);
-%             data.image_name = cat(1,data.image_name, image_name);
+            data.image_name = cat(1,data.image_name, image_name);
         end
         
         % Read next line

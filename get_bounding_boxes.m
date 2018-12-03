@@ -1,13 +1,31 @@
-function [] = get_bounding_boxes(root_dir,image_num)
+function [] = get_bounding_boxes(params)
 
     % Load input file
-    input_file = fopen(fullfile(root_dir,'train_ship_segmentations_v2.csv'));
-
-    % Create output file
-    output_file = fopen('Ship-Detection\detections.csv','w');
-
+    input_file = fopen(fullfile(params.root_dir,'clean_segmentations.csv'));
     % Read first header line (ignore it really)
     header = fgetl(input_file);
+    
+    % Create training file
+    training_file = fopen(fullfile(params.root_dir, 'train_detections.csv'),'w');
+    [train_ship_counter, train_no_ship_counter] = extractBoxes(input_file, ...
+        training_file, params.root_dir, params.train_image_count);
+    fclose(training_file);
+    
+    % Create testing file
+    testing_file = fopen(fullfile(params.root_dir, 'test_detections.csv'),'w');
+    [test_ship_counter, test_no_ship_counter] = extractBoxes(input_file, ...
+        testing_file, params.root_dir, params.test_image_count);
+    fclose(testing_file);
+    
+    fclose(input_file);
+    
+    disp("Positive/Negative sample ratio:");
+    fprintf("Training: %i/%i\n",train_ship_counter,train_no_ship_counter);
+    fprintf("Testing: %i/%i\n",test_ship_counter,test_no_ship_counter);
+end
+
+function [ship_counter, no_ship_counter] = extractBoxes(input_file, ...
+    output_file, root_dir, num_images)
 
     % Read next x lines of data
     % Don't try them all at once there's 231,000
@@ -16,7 +34,7 @@ function [] = get_bounding_boxes(root_dir,image_num)
     image_counter = 0;
     ship_counter = 0;
     no_ship_counter = 0;
-    while image_counter <= image_num
+    while image_counter <= num_images
 
         % Manually split lines with ',' delimeter
         line = strsplit(fgetl(input_file),',');
@@ -39,7 +57,8 @@ function [] = get_bounding_boxes(root_dir,image_num)
 
                     fprintf(output_file,'%s',current_img);
                     for point = bounding_boxes.'
-                        fprintf(output_file,',%i,%i,%i,%i',point(1),point(2),point(3),point(4));
+                        fprintf(output_file,',%i,%i,%i,%i',point(1),...
+                            point(2),point(3),point(4));
                     end
                     fprintf(output_file,',1\n');
 
@@ -107,8 +126,8 @@ function [] = get_bounding_boxes(root_dir,image_num)
             image = imread(image_name);
             image_size = size(image);
 
-            % Generate random "false" sample, samples have a median size of
-            % 650 pixels aka 25x26
+            % Generate random "false" sample
+            % Uses median sample size of 650 pixels (25x26)
             sample_x = randi([1,image_size(1)-25],1,1);
             sample_y = randi([1,image_size(2)-26],1,1);
             fprintf(output_file,'%s,%i,%i,%i,%i,0\n',...
@@ -117,11 +136,4 @@ function [] = get_bounding_boxes(root_dir,image_num)
                 sample_x+25,sample_y+25);
         end
     end
-
-    fclose(input_file);
-    fclose(output_file);
-
-    disp("Positive/Negative sample ratio:");
-    output = sprintf("%i/%i\n",ship_counter,no_ship_counter);
-    disp(output);
 end

@@ -1,31 +1,44 @@
-function [array] = classifier(mdl, imgName, params, pixelSize, numberOfSteps )
- %read image and extract rows and columns 
-example_image = imread(imgName);
-[rows, columns, ~] = size(example_image);
+function [arr] = classifier(mdl, imgName, params)
+    % read image and extract rows and columns 
+    example_image = imread(imgName);
+    [rows, columns, ~] = size(example_image);
 
- %initialize heatmap array
-array = zeros(rows, columns);
- %loop through all the rows and columns at the specified number of steps
-for i = linspace(1,rows-pixelSize(1),numberOfSteps)
-    for j = linspace(1, columns-pixelSize(2),numberOfSteps)
-        %round i and j to the nearest integer to use as indices
-        j = round(j,0);
-        i = round(i,0);
-        %extract part of the image and the features from this bin
-        img = example_image(i:(i+pixelSize(1)),j:(j+pixelSize(2)),:);
-        feature = featureExtraction(img, params);
-        %predict if there is a boat there or not (1 means there is a boat 2
-        %means there is not rn
-        p = predict(mdl, double(feature));
-        %if the prediction says theres a boat increase the "score" of each
-        %pixel in the bin by 1
-        if p==1
-            for h = i:(i+pixelSize(1))
-                for g = j:(j+pixelSize(2))
-                    array(h,g) = array(h,g)+1;
+    % initialize heatmap array
+    arr = zeros(rows, columns);
+
+    % Loop through windows of different sizes
+    for w=1:size(params.window_size,1)
+        win = params.window_size(w,:);
+        
+        % loop through all the rows and columns at the specified number of 
+        % steps
+        for i = linspace(1,rows-win(1),params.num_steps)
+            for j = linspace(1, columns-win(2),params.num_steps)
+                % round i and j to the nearest integer to use as indices
+                x = round(j,0);
+                y = round(i,0);
+                x_win = x+win(2);
+                y_win = y+win(1);
+                
+                % extract part of the image and the features from this bin
+                img = example_image(y:y_win,x:x_win,:);
+                feature = featureExtraction(img, params);
+                
+                % predict if there is a boat there or not (1 means there 
+                % is a boat 0 means there is not
+                [label, score] = predict(mdl, double(feature));
+                
+                % if the prediction says theres a boat increase the "score" 
+                % of each pixel in the bin by 1
+                if score(2) >= params.confidence_thresh
+                    arr(y:y_win,x:x_win) = arr(y:y_win,x:x_win) + 1;
                 end
             end
-       end
+        end
     end
-end
+    
+    % Normalize heatmap
+    max_heat = max(arr(:));
+    min_heat = min(arr(:));
+    arr = (arr - min_heat) / max_heat;
  end

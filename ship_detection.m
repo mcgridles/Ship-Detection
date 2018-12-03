@@ -1,5 +1,8 @@
+% Ship Detection
+
+%% Define Parameters
 % Feature extraction parameters
-params.filter_size = [5 5];
+params.filter_size = [11 11];
 params.color_space = 'ycbcr';
 params.color_bins = 32;
 params.grad_size = [16 16];
@@ -8,148 +11,105 @@ params.spatial_size = [32 32];
 params.visualize = false;
 
 % Other parameters
-window_size = [30 30];
-training_image_count = 10;
-test_image_display_count = 10;
-pixel_size = 100;
-heatmap_threshold = 15;
-min_box_size = 20;
+params.train_image_count = 1000;
+params.test_image_count = 1000;
+params.test_image_display_count = 10;
+params.window_size = [30 30];
+params.num_steps = 100;
+params.confidence_thresh = 1;
+params.heatmap_thresh = 0.01;
+params.min_box_size = 30;
+params.k_fold = 10;
+params.poly_order = 5;
 
 % Directory variables
-root_dir = './Ship-Detection';
-image_dir = 'D:\Ship-Detection\train_v2';
+params.root_dir = './Ship-Detection';
+params.image_dir = 'train_v2';
 
-%% Get bounding boxes
-if ~exist(fullfile(root_dir,'detections.csv'),'file')
-    disp("No file 'detections.csv' found, extracting bounding boxes...");
+%% Get sample bounding boxes from Run Length Encoded CSV file
+if ~exist(fullfile(params.root_dir, 'train_detections.csv'),'file')
+    disp("No file 'train_detections.csv' found, extracting bounding boxes...");
     tic
-    get_bounding_boxes('D:\Ship-Detection',training_image_count);
-    runtime = toc;
-    fprintf("Extracted bounding boxes in: %.8f seconds\n",runtime);
+    get_bounding_boxes(params);
+    bbox_runtime = toc;
+    fprintf("Extracted bounding boxes in: %.8f seconds\n",bbox_runtime);
 else
     disp("Found detections.csv, skipping bounding box extraction");
 end
 
-%% Extract data
-if ~exist(fullfile(root_dir, 'data.mat'),'file')
+%% Extract feature data from all samples
+if ~exist(fullfile(params.root_dir, 'data.mat'),'file')
     disp("No existing feature set found, creating new one...");
     tic
-    data = createDataMatrix(params, root_dir, image_dir);
+    data = createDataMatrix(params);
     save(fullfile('Ship-Detection','data.mat'), 'data');
     feature_extract_runtime = toc;
     fprintf("Created data matrix in: %.8f seconds\n",feature_extract_runtime);
 else
     disp("Found existing feature set, skipping feature generation");
-    data_struct = load(fullfile(root_dir, 'data.mat'));
+    data_struct = load(fullfile(params.root_dir, 'data.mat'));
     data = data_struct.data;
 end
 
+% Perform PCA on data
 if params.visualize
-    tic
-    [pcs,scrs,~,~,pexp] = pca(double(data.features));
-    pca_runtime = toc;
-    fprintf("Performed PCA in: %.8f seconds\n",pca_runtime);
-    
-    pareto(pexp);
-    title('Result of PCA, first 10 components');
-    
-    data_reduced = srcs(:,1:3);
-    scatter3(data_reduced(:,1), data_reduced(:,2), data_reduced(:,3));
-    xlabel('Component 1');
-    ylabel('Component 2');
-    zlabel('Component 3');
-    title('3 Most dominant components');
+    featurePCA(data);
 end
 
 %% Create classifier
-if ~exist(fullfile(root_dir, 'ship_detection_model.mat'), 'file')
-    disp("No existing classifier found, creating new one...");
+if ~exist(fullfile(params.root_dir, 'ship_detection_model.mat'), 'file')
+    disp("No existing classifier found, training model...");
     tic
-    disp('Training model...');
-    mdl = fitcsvm(double(data.features), double(data.class),'HoldOut',0.15);
+    svm_mdl = fitcsvm(double(data.features), double(data.class), ...
+        'KernelFunction', 'polynomial', 'PolynomialOrder', ...
+        params.poly_order, 'CrossVal', 'on', 'KFold', params.k_fold);
+    
+    % Find best model using KFold cross validation
+    best_loss = Inf;
+    best_idx = 1;
+    for i=1:params.k_fold
+        % Extract the trained, compact classifier
+        trained_mdl = svm_mdl.Trained{i};
 
-    compact_mdl = mdl.Trained{1}; % Extract the trained, compact classifier
-    testInds = test(mdl.Partition);   % Extract the test indices
-    X_test = double(data.features(testInds,:));
-    y_test = double(data.class(testInds,:));
-    mdl_loss = loss(compact_mdl, X_test, y_test); % Calculate loss
+        test_idx = test(svm_mdl.Partition, i);   % Extract the test indices
+        X_test = double(data.features(test_idx,:));
+        y_test = double(data.class(test_idx,:));
+        mdl_loss = loss(trained_mdl, X_test, y_test); % Calculate loss
+        
+        if mdl_loss < best_loss
+            best_loss = mdl_loss;
+            best_idx = i;
+        end
+    end
+    mdl = svm_mdl.Trained{best_idx};
 
-    saveCompactModel(compact_mdl, fullfile(root_dir,'ship_detection_model'));
+    saveCompactModel(mdl, fullfile(params.root_dir,'ship_detection_model'));
     training_runtime = toc;
     fprintf("Generated model in: %.8f seconds\n",training_runtime);
-    
-    mdl = compact_mdl;
 else
     disp("Found existing classifier, skipping classifier creation");
-    mdl = loadCompactModel(fullfile(root_dir, 'ship_detection_model.mat'));
+    mdl = loadCompactModel(fullfile(params.root_dir, 'ship_detection_model.mat'));
 end
 
 %% Single image classification
-test_image_name = fullfile(root_dir,'test_images','00a3ab3cc.jpg');
-test_image = imread(test_image_name);
+image_name = '00a3ab3cc.jpg';
+image_path = fullfile(params.root_dir,'test_images',image_name);
+image = imread(image_path);
 
-disp('Making predictions...');
-pred = classifier(mdl, test_image_name, params, window_size, pixel_size);
-heat = thresholdHeatmap(pred, heatmap_threshold);
-[labeled_img, pos] = drawLabeledBoxes(test_image, heat, min_box_size);
+disp('Searching image...');
+pred = classifier(mdl, image_path, params);
+heat = thresholdHeatmap(pred, params.heatmap_thresh);
+[labeled_img, pos] = drawLabeledBoxes(image, heat, params.min_box_size);
 
 figure;
-subplot(1,2,1);
-h = heatmap(double(heat), 'MissingDataColor', [1 1 1],'GridVisible','off');
-subplot(1,2,2);
+heatmap(double(pred),'MissingDataColor',[1 1 1],'GridVisible','off');
+figure;
+heatmap(double(heat),'MissingDataColor',[1 1 1],'GridVisible','off');
+figure;
 imshow(labeled_img);
 return
 
-%% Display test images
-index_offset = 0;
-for index = 1:test_image_display_count
-    for test_index = index+index_offset:size(y_test,1)
-        if y_test(test_index) == 1
-            
-            test_image_name = data.image_name(test_index,:);
-            
-            % Run image through classifier
-            heatmap = classifier(root_dir,compact_mdl,image_dir,test_image_name,window_size,pixel_step_size,params); 
-            
-            % Display image
-            test_image = imread(fullfile(root_dir,image_dir,test_image_name));
-            
-            % Retrieve bounding boxes
-            bounding_boxes = heatmap2BBox(heatmap,heatmap_threshold);
-            
-            % Retrieve groundtruth bounding boxes
-            file = fopen(fullfile(root_dir,'detections.csv'));
-            line = fgetl(file);
-            groundtruth = [];
-            while ischar(line)
-                line = strsplit(fgetl(file),',');
-                if contains(char(line(1,1)),test_image_name)
-                    class = line(1,end);
-                    if class == 1
-                        groundtruth = line(1,2:end-1);
-                    end
-                end
-                line = fgetl(file);
-            end
-            
-            % Compare with groundtruth
-            figure(1);
-            imshow(test_image);
-            hold on;
-            for bbox_index = 1:4:size(bounding_boxes,1)
-                rectangle('Position',bounding_boxes(bbox_index:bbox_index+3),...
-                    'EdgeColor','b');
-                hold on;
-            end
-            for gbox_index = 1:4:size(groundtruth,1)
-                rectangle('Position',[bounding_boxes(bbox_index:bbox_index+3)],...
-                    'EdgeColor','g');
-                hold on;
-            end
-            
-            % Update offset
-            index_offset = test_index+1;
-            break;
-        end
-    end
-end
+%% Classify all test data
+% TODO: Test this
+err = calculateError(params);
+fprintf('Total error: %.3f\n', err);
