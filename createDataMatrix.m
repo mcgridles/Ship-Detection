@@ -1,7 +1,6 @@
-
 function [data] = createDataMatrix(params, root_dir, image_dir)
     % Extract features on test image to determine number of features
-    test_img = imread(fullfile(root_dir,'test_images/ship_example.png'));
+    test_img = imread(fullfile(root_dir,'test_images','ship_example.png'));
     test_img = smoothImage(test_img, params.filter_size);
     test_features = featureExtraction(test_img, params);
     num_features = length(test_features);
@@ -36,6 +35,10 @@ function [data] = createDataMatrix(params, root_dir, image_dir)
         % Make sure class was read correctly
         if class ~= 0 && class ~= 1
             error('Invalid class found: %d', class);
+        end
+        
+        if class == 0
+            class = 2;
         end
 
         for b=1:4:size(boxes,2)

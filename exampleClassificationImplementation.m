@@ -31,7 +31,6 @@ a = classifier(featureMatrix,labels, imgname,color_space, ...
 %create heatmap
 h = heatmap(a, 'MissingDataColor', [1 1 1],'GridVisible','off');
 
-
 % Smooths each channel of an image using a median filter
 function [smoothed] = smoothImage(img, filter_size)
     smoothed = img;

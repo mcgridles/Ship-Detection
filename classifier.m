@@ -1,28 +1,31 @@
-function [heatmap] = classifier(root_dir, model, image_folder, image_name, window_size, pixel_step_size, extr_params)
-    
-    % Load image
-    image = imread(fullfile(root_dir,image_folder,image_name));
-    heatmap = zeros(size(image));
-    
-    % Traverse image and classify pixels
-    for x = window_size(1)+1:pixel_step_size:size(image,1)-window_size(1)
-        for y = window_size(2)+1:pixel_step_size:size(image,2)-window_size(2)
-            
-            % Extract features in window
-            feature_window = image(x-window_size(1):x+window_size(1),y-window_size(2):y+window_size(2),:);
-            feature = featureExtraction(feature_window, extr_params);
-            
-            % Classify feature
-            p = predict(model,double(feature));
-            
-            % Incriment heatmap if classification indicates a ship
-            if p == 1
-                for hx = x-window_size(1):x+window_size(1)
-                    for hy = y-window_size(2):y+window_size(2)
-                        heatmap(hx,hy) = heatmap(hx,hy)+1;
-                    end
+function [array] = classifier(mdl, imgName, params, pixelSize, numberOfSteps )
+ %read image and extract rows and columns 
+example_image = imread(imgName);
+[rows, columns, ~] = size(example_image);
+
+ %initialize heatmap array
+array = zeros(rows, columns);
+ %loop through all the rows and columns at the specified number of steps
+for i = linspace(1,rows-pixelSize(1),numberOfSteps)
+    for j = linspace(1, columns-pixelSize(2),numberOfSteps)
+        %round i and j to the nearest integer to use as indices
+        j = round(j,0);
+        i = round(i,0);
+        %extract part of the image and the features from this bin
+        img = example_image(i:(i+pixelSize(1)),j:(j+pixelSize(2)),:);
+        feature = featureExtraction(img, params);
+        %predict if there is a boat there or not (1 means there is a boat 2
+        %means there is not rn
+        p = predict(mdl, double(feature));
+        %if the prediction says theres a boat increase the "score" of each
+        %pixel in the bin by 1
+        if p==1
+            for h = i:(i+pixelSize(1))
+                for g = j:(j+pixelSize(2))
+                    array(h,g) = array(h,g)+1;
                 end
             end
-        end
+       end
     end
 end
+ end
