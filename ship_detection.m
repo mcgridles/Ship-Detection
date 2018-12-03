@@ -2,7 +2,7 @@
 
 %% Define Parameters
 % Feature extraction parameters
-params.filter_size = [5 5];
+params.filter_size = [11 11];
 params.color_space = 'ycbcr';
 params.color_bins = 32;
 params.grad_size = [16 16];
@@ -15,10 +15,10 @@ params.train_image_count = 220;
 params.test_image_count = 100;
 params.test_image_display_count = 10;
 params.window_size = [30 30];
-params.num_steps = 200;
+params.num_steps = 70;
 params.num_pca_features = 256;
 params.pca_coeff = [];
-params.confidence_thresh = 1.05;
+params.confidence_thresh = 1.25;
 params.heatmap_thresh = 0.3;
 params.min_box_size = 20;
 params.k_fold = 10;
@@ -62,27 +62,26 @@ if ~exist(fullfile(params.root_dir, 'ship_detection_model.mat'), 'file')
     disp("No existing classifier found, training model...");
     tic
     svm_mdl = fitcsvm(double(data.features), double(data.class), ...
-        'KernelFunction', 'polynomial', 'PolynomialOrder', ...
-        params.poly_order, 'CrossVal', 'on', 'KFold', params.k_fold);
+        'ClassNames', [0 1], 'KernelFunction', 'polynomial', ...
+        'PolynomialOrder', params.poly_order, 'CrossVal', 'on', ...
+        'KFold', params.k_fold);
     
     % Find best model using KFold cross validation
     best_loss = Inf;
-    best_idx = 1;
-    for i=1:params.k_fold
+    for fold=1:params.k_fold
         % Extract the trained, compact classifier
-        trained_mdl = svm_mdl.Trained{i};
+        trained_mdl = svm_mdl.Trained{fold};
 
-        test_idx = test(svm_mdl.Partition, i);   % Extract the test indices
+        test_idx = test(svm_mdl.Partition, fold); % Extract the test indices
         X_test = double(data.features(test_idx,:));
         y_test = double(data.class(test_idx,:));
         mdl_loss = loss(trained_mdl, X_test, y_test); % Calculate loss
         
         if mdl_loss < best_loss
             best_loss = mdl_loss;
-            best_idx = i;
+            mdl = trained_mdl;
         end
     end
-    mdl = svm_mdl.Trained{best_idx};
 
     saveCompactModel(mdl, fullfile(params.root_dir,'ship_detection_model'));
     training_runtime = toc;
@@ -92,12 +91,12 @@ else
     mdl = loadCompactModel(fullfile(params.root_dir, 'ship_detection_model.mat'));
 end
 
-%% Calculate error
+% Calculate error
 err = calculateError(mdl, params);
 fprintf('Total error: %.3f\n', err);
 
 %% Make predictions on single image
-image_name = '00a3ab3cc.jpg';
+image_name = 'test_image.jpg';
 image_path = fullfile(params.root_dir,'test_images',image_name);
 image = imread(image_path);
 

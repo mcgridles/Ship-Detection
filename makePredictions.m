@@ -35,7 +35,7 @@ function [arr] = makePredictions(mdl, imgName, params)
                 
                 % if the prediction says theres a boat increase the "score" 
                 % of each pixel in the bin by 1
-                if score(2) >= params.confidence_thresh
+                if score(2) <= params.confidence_thresh
                     arr(y:y_win,x:x_win) = arr(y:y_win,x:x_win) + 1;
                 end
             end
