@@ -4,17 +4,19 @@ function [err] = calculateError(mdl, params)
     total_pred = 0;
     
     filename = 'test_detections.csv';
-    file = fopen(fullfile(root_dir,filename));
+    file = fopen(fullfile(params.root_dir,filename));
     
     line = fgetl(file);
     while ischar(line)
         line = strsplit(line,',');
         
         % Load image
-        test_image_path = line{1};
-        test_image_name = strsplit(test_image_path,{'/','\'});
-        test_image = imread(fullfile(params.root_dir, params.image_dir,...
-            test_image_name));
+        image_path = line{1};
+        test_image_name = strsplit(image_path,{'/','\'});
+        test_image_name = test_image_name{end};
+        test_image_path = fullfile(params.root_dir, params.image_dir,...
+            test_image_name);
+        test_image = imread(test_image_path);
         
         % Read boxes and class
         if isempty(line{end})
@@ -28,10 +30,10 @@ function [err] = calculateError(mdl, params)
         
         % Extract box from image
         for b=1:4:size(boxes,2)
-            min_x = boxes(b);
-            min_y = boxes(b+1);
-            max_x = boxes(b+2);
-            max_y = boxes(b+3);
+            min_x = str2double(boxes{b});
+            min_y = str2double(boxes{b+1});
+            max_x = str2double(boxes{b+2});
+            max_y = str2double(boxes{b+3});
             
             % Extract features
             box = test_image(min_y:max_y,min_x:max_x,:);
@@ -52,5 +54,5 @@ function [err] = calculateError(mdl, params)
     fclose(file);
     
     % Calculate total error
-    err = num_correct / total_pred;
+    err = 1 - (num_correct / total_pred);
 end

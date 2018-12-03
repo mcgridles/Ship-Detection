@@ -15,31 +15,31 @@ params.train_image_count = 220;
 params.test_image_count = 100;
 params.test_image_display_count = 10;
 params.window_size = [30 30];
-params.num_steps = 100;
+params.num_steps = 200;
 params.num_pca_features = 256;
 params.pca_coeff = [];
 params.confidence_thresh = 1.05;
 params.heatmap_thresh = 0.3;
 params.min_box_size = 20;
 params.k_fold = 10;
-params.poly_order = 5;
+params.poly_order = 3;
 
 % Directory variables
 params.root_dir = './Ship-Detection';
 params.image_dir = 'train_v2';
 
-%% Get sample bounding boxes from Run Length Encoded CSV file
-if ~exist(fullfile(params.root_dir, 'detections.csv'),'file')
+%% Load data
+if ~exist(fullfile(params.root_dir, 'train_detections.csv'),'file')
     disp("No file 'train_detections.csv' found, extracting bounding boxes...");
     tic
-    get_bounding_boxes(params);
+    getBoundingBoxes(params);
     bbox_runtime = toc;
     fprintf("Extracted bounding boxes in: %.8f seconds\n",bbox_runtime);
 else
     disp("Found detections.csv, skipping bounding box extraction");
 end
 
-%% Extract feature data from all samples
+%% Extract features
 if ~exist(fullfile(params.root_dir, 'data.mat'),'file')
     disp("No existing feature set found, creating new one...");
     tic
@@ -57,7 +57,7 @@ end
 % PCA reduction was tested and did not produce better results
 % [params.pca_coeff, data.features] = featurePCA(data, params);
 
-%% Create classifier
+%% Train classifier
 if ~exist(fullfile(params.root_dir, 'ship_detection_model.mat'), 'file')
     disp("No existing classifier found, training model...");
     tic
@@ -92,13 +92,17 @@ else
     mdl = loadCompactModel(fullfile(params.root_dir, 'ship_detection_model.mat'));
 end
 
-%% Single image classification
+%% Calculate error
+err = calculateError(mdl, params);
+fprintf('Total error: %.3f\n', err);
+
+%% Make predictions on single image
 image_name = '00a3ab3cc.jpg';
 image_path = fullfile(params.root_dir,'test_images',image_name);
 image = imread(image_path);
 
 disp('Searching image...');
-pred = classifier(mdl, image_path, params);
+pred = makePredictions(mdl, image_path, params);
 heat = thresholdHeatmap(pred, params.heatmap_thresh);
 [labeled_img, pos] = drawLabeledBoxes(image, heat, params.min_box_size);
 
@@ -108,7 +112,3 @@ figure;
 heatmap(double(heat),'MissingDataColor',[1 1 1],'GridVisible','off');
 figure;
 imshow(labeled_img);
-
-%% Classify all test data
-err = calculateError(mdl, params);
-fprintf('Total error: %.3f\n', err);
