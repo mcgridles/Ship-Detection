@@ -13,6 +13,7 @@ training_image_count = 10;
 test_image_display_count = 10;
 pixel_size = 100;
 heatmap_threshold = 15;
+min_box_size = 20;
 
 % Directory variables
 root_dir = './Ship-Detection';
@@ -20,7 +21,7 @@ image_dir = 'D:\Ship-Detection\train_v2';
 
 %% Get bounding boxes
 if ~exist(fullfile(root_dir,'detections.csv'),'file')
-    disp("No file \'detections.csv\' found, extracting bounding boxes...");
+    disp("No file 'detections.csv' found, extracting bounding boxes...");
     tic
     get_bounding_boxes('D:\Ship-Detection',training_image_count);
     runtime = toc;
@@ -89,44 +90,14 @@ test_image = imread(test_image_name);
 
 disp('Making predictions...');
 pred = classifier(mdl, test_image_name, params, window_size, pixel_size);
+heat = thresholdHeatmap(pred, heatmap_threshold);
+[labeled_img, pos] = drawLabeledBoxes(test_image, heat, min_box_size);
 
 figure;
-h = heatmap(double(pred), 'MissingDataColor', [1 1 1],'GridVisible','off');
-
-bounding_boxes = heatmap2BBox(pred,heatmap_threshold);
-
-% Retrieve groundtruth bounding boxes
-file = fopen(fullfile(root_dir,'detections.csv'));
-line = fgetl(file);
-groundtruth = [];
-while ischar(line)
-    line = strsplit(line,',');
-    if contains(char(line(1,1)),test_image_name)
-        class = str2double(line(1,end));
-        if class == 1
-            groundtruth = line(1,2:end-1);
-        end
-    end
-    line = fgetl(file);
-end
-if ~isempty(groundtruth)
-    groundtruth = str2double(groundtruth);
-end
-
-% Compare with groundtruth
-figure(1);
-imshow(test_image);
-hold on;
-for bbox_index = 1:4:size(bounding_boxes,2)
-    rectangle('Position',bounding_boxes(bbox_index:bbox_index+3),...
-        'EdgeColor','b');
-    hold on;
-end
-for gbox_index = 1:4:size(groundtruth,2)
-    rectangle('Position',groundtruth(gbox_index:gbox_index+3),...
-        'EdgeColor','g');
-    hold on;
-end
+subplot(1,2,1);
+h = heatmap(double(heat), 'MissingDataColor', [1 1 1],'GridVisible','off');
+subplot(1,2,2);
+imshow(labeled_img);
 return
 
 %% Display test images

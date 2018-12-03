@@ -65,4 +65,6 @@ function [data] = createDataMatrix(params, root_dir, image_dir)
     
     data.features = double(data.features);
     data.class = double(data.class);
+    
+    fclose(input_file);
 end
