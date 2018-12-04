@@ -4,3 +4,6 @@
 *.zip
 *.m~
 *.asv
+
+train_v2/
+test_v2/

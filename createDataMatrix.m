@@ -1,6 +1,7 @@
-function [data] = createDataMatrix(params, root_dir, image_dir)
+function [data] = createDataMatrix(params)
     % Extract features on test image to determine number of features
-    test_img = imread(fullfile(root_dir,'test_images','ship_example.png'));
+    test_img = imread(fullfile(params.root_dir,'test_images',...
+        'ship_example.png'));
     test_img = smoothImage(test_img, params.filter_size);
     test_features = featureExtraction(test_img, params);
     num_features = length(test_features);
@@ -10,7 +11,7 @@ function [data] = createDataMatrix(params, root_dir, image_dir)
     data.image_name = [];
 
     % Read CSV file containing detections
-    input_file = fopen(fullfile(root_dir, 'detections.csv'));
+    input_file = fopen(fullfile(params.root_dir, 'train_detections.csv'));
     
     line = fgetl(input_file);
     while ischar(line)
@@ -20,7 +21,8 @@ function [data] = createDataMatrix(params, root_dir, image_dir)
         image_path = line{1};
         image_name = strsplit(image_path,{'/','\'});
         image_name = image_name{1,end};
-        image = imread(fullfile(root_dir,image_dir,image_name));
+        image = imread(fullfile(params.root_dir,params.image_dir,...
+            image_name));
         
         % Get bounding box coordinates and class number
         if isempty(line{end})
@@ -65,4 +67,6 @@ function [data] = createDataMatrix(params, root_dir, image_dir)
     
     data.features = double(data.features);
     data.class = double(data.class);
+    
+    fclose(input_file);
 end
